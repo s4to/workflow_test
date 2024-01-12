@@ -45,4 +45,4 @@ jobs:
           GIT_ISSUE_NO: ${{ steps.github_event_info.outputs.issue_no }}
         run: |
           gem install -N git-pr-release -v "2.2.0"
-          git-pr-release --no-fetch
+          git-pr-release --no-fetch --squashed
