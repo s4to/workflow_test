@@ -1,0 +1,48 @@
+name: "[Autorun] Creating pull request for release"
+
+on:
+  push:
+    branches:
+      - develop
+jobs:
+  create-release-pr:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      TZ: "Asia/Tokyo"
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Get Github event's info
+        id: github_event_info
+        env:
+          HEAD_MESSAGE: ${{ github.event.head_commit.message }}
+        run: |
+          commit_message=$(echo "${HEAD_MESSAGE}" | sed -n -e 1p)
+          echo ${commit_message}
+          echo "message=${commit_message}" >> "$GITHUB_OUTPUT"
+          # 複数の#Issue番号をカンマ区切りで取得
+          issue_no=$(git log --oneline --abbrev-commit --merges origin/main..HEAD | rev | cut -f1 -d'/' | rev | sort | uniq | tr '\n' ',' | sed 's/,$//')
+          # issue_no=$(git log --oneline --abbrev-commit --merges origin/main..HEAD | rev | cut -f1 -d'/' | rev | sort | uniq | sed -e 's/^[^#]*#//' | tr '\n' ',' | sed 's/,$//')
+          echo ${issue_no}
+          echo "issue_no=${issue_no}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Ruby 3.1
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.1
+
+      - name: Create release PR
+        env:
+          GIT_PR_RELEASE_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GIT_PR_RELEASE_BRANCH_PRODUCTION: main
+          GIT_PR_RELEASE_BRANCH_STAGING: develop
+          GIT_PR_RELEASE_LABELS: "release"
+          GIT_PR_RELEASE_TEMPLATE: .github/git-pr-release-template.erb
+          GIT_COMMIT_MESSAGE: ${{ steps.github_event_info.outputs.message }}
+          GIT_ISSUE_NO: ${{ steps.github_event_info.outputs.issue_no }}
+        run: |
+          gem install -N git-pr-release -v "2.2.0"
+          git-pr-release --no-fetch
