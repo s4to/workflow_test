@@ -1,0 +1,14 @@
+[RELEASE] <%= Time.now.strftime("%Y-%m-%d %H:%M:%S") %>
+
+## Related PRs
+
+<% sorted_pr = pull_requests.sort_by {|pr| pr.pr.merged_at} -%>
+<% sorted_pr.each do |pr| -%>
+- 🚀 #<%= pr.number %> <%=pr.title %> <%= pr.mention %>
+<% end -%>
+
+<% if ENV.fetch('GIT_ISSUE_NO', '') =~ /^#[0-9]+/ then -%>
+## Related Issues
+
+- ✅ <%= ENV.fetch('GIT_ISSUE_NO') %>
+<% end -%>
